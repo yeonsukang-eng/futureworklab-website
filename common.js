@@ -26,12 +26,33 @@ function initCommon(activePage) {
     });
   }
 
+  // Dark mode
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      updateThemeIcon();
+    });
+  });
+  updateThemeIcon();
+
   // Active nav link
   if (activePage) {
     document.querySelectorAll('.nav-links a').forEach(a => {
       if (a.dataset.page === activePage) a.classList.add('active');
     });
   }
+}
+
+function updateThemeIcon() {
+  const isDark = document.documentElement.classList.contains('dark');
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.innerHTML = isDark ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  });
 }
 
 function getNavHTML(rootPath = '') {
@@ -54,6 +75,7 @@ function getNavHTML(rootPath = '') {
         <a href="${rootPath}resources.html" data-page="resources">리소스</a>
         <a href="${rootPath}contact.html" data-page="company">회사소개</a>
         <a href="${rootPath}demo.html" class="nav-cta">PoC 신청 →</a>
+        <button class="theme-toggle" aria-label="테마 변경"></button>
       </div>
     </div>
   </nav>`;
@@ -64,35 +86,31 @@ function getFooterHTML(rootPath = '') {
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <div class="footer-logo"><a href="${rootPath}index.html">${FWL_LOGO_SVG}</a></div>
-        <p class="footer-desc">제조 현장의 AI 운영 플랫폼.<br>공장 안의 일을 실제로 끝내는 온톨로지 AI.</p>
-        <div class="footer-contact">
-          <div>서울특별시 강남구 테헤란로 311, 1203호</div>
-          <div>contact@futureworklab.co.kr</div>
-          <div>02-6953-7103</div>
+        <div class="footer-logo-text">Futurework Lab.</div>
+        <p class="footer-tagline">Shaping the future<br>of work with AI Agents</p>
+        <div class="footer-info">
+          상호명: 퓨처워크랩(주) | 대표자: 이영우<br>
+          통신판매업신고번호: 2025-서울강남-01339<br>
+          사업자등록번호: 305-86-41934<br>
+          주소: 서울시 강남구 테헤란로311길 4건물, 2층 A1020호
         </div>
       </div>
       <div class="footer-col">
-        <h4>제품</h4>
-        <a href="${rootPath}product-ax-flow.html">AX Flow</a>
-        <a href="${rootPath}demo.html">PoC 신청</a>
-        <a href="${rootPath}solutions-subsidy-guide.html">지원사업 가이드</a>
+        <h4>Company</h4>
+        <a href="${rootPath}contact.html">ABOUT US</a>
+        <a href="${rootPath}resources.html">BLOG</a>
+        <a href="${rootPath}contact.html">CONTACT</a>
+        <a href="${rootPath}demo.html">RECRUIT</a>
       </div>
       <div class="footer-col">
-        <h4>리소스</h4>
-        <a href="${rootPath}resources.html">블로그</a>
-        <a href="${rootPath}resources.html">고객 사례</a>
-        <a href="${rootPath}contact.html">문의하기</a>
-      </div>
-      <div class="footer-col">
-        <h4>회사</h4>
-        <a href="${rootPath}contact.html">회사소개</a>
-        <a href="${rootPath}privacy.html">개인정보처리방침</a>
+        <h4>Service</h4>
+        <a href="${rootPath}product-ax-flow.html">링크브레인</a>
+        <a href="${rootPath}product-ax-flow.html">기능 소개</a>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>&copy; 2026 FutureWorkLab. All rights reserved.</span>
-      <a href="${rootPath}privacy.html">개인정보처리방침</a>
+      &copy; 2025 퓨처워크랩 주식회사<br>
+      help@futureworklab.co.kr
     </div>
   </footer>`;
 }

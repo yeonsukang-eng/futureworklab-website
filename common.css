@@ -66,30 +66,49 @@ body {
 .nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; }
 
 /* ===== FOOTER ===== */
-.footer { background: var(--n900); padding: 64px 0 32px; color: var(--n400); }
+.footer { background: #0C1220; padding: 56px 0 32px; color: rgba(255,255,255,0.45); }
 .footer-inner {
   max-width: 1200px; margin: 0 auto; padding: 0 40px;
-  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+  display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 64px;
 }
-.footer-brand .footer-logo { margin-bottom: 16px; }
-.footer-brand .footer-logo svg { height: 20px; width: auto; }
-.footer-brand .footer-logo svg path { fill: #FFFFFF; }
-.footer-brand .footer-desc { font-size: 14px; line-height: 1.7; color: var(--n500); margin-bottom: 20px; }
-.footer-brand .footer-contact { font-size: 13px; color: var(--n500); line-height: 2; }
-.footer-col h4 { font-size: 13px; font-weight: 600; color: var(--n0); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+.footer-brand .footer-logo-text { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 20px; letter-spacing: -0.3px; }
+.footer-brand .footer-tagline { font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+.footer-brand .footer-info { font-size: 12px; color: rgba(255,255,255,0.25); line-height: 1.9; }
+.footer-col h4 { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.35); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
 .footer-col a {
-  display: block; font-size: 14px; color: var(--n500);
-  text-decoration: none; margin-bottom: 10px; transition: color 0.2s ease;
+  display: block; font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.7);
+  text-decoration: none; margin-bottom: 14px; transition: color 0.2s ease;
 }
-.footer-col a:hover { color: var(--n0); }
+.footer-col a:hover { color: #FFFFFF; }
 .footer-bottom {
-  max-width: 1200px; margin: 48px auto 0; padding: 24px 40px 0;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 13px; color: var(--n600);
+  max-width: 1200px; margin: 40px auto 0; padding: 20px 40px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  text-align: center; font-size: 12px; color: rgba(255,255,255,0.2);
 }
-.footer-bottom a { color: var(--n500); text-decoration: none; }
-.footer-bottom a:hover { color: var(--n0); }
+.footer-bottom a { color: rgba(255,255,255,0.3); text-decoration: none; }
+.footer-bottom a:hover { color: rgba(255,255,255,0.6); }
+
+/* ===== DARK MODE ===== */
+.theme-toggle {
+  background: none; border: 1px solid var(--n200); border-radius: 8px;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--n500); transition: all 0.2s ease; margin-left: 8px;
+}
+.theme-toggle:hover { background: var(--n50); color: var(--n900); }
+
+html.dark { --n0:#09090B; --n50:#18181B; --n75:#1F1F23; --n100:#27272A; --n200:#3F3F46; --n300:#52525B; --n400:#71717A; --n500:#A1A1AA; --n600:#D4D4D8; --n700:#E4E4E7; --n800:#F4F4F5; --n900:#FAFAFA; }
+html.dark body { background: #09090B; color: #FAFAFA; }
+html.dark .nav { background: rgba(9,9,11,0.92); border-bottom-color: var(--n100); }
+html.dark .nav-cta { background: var(--n0); color: var(--n900); }
+html.dark .nav.scrolled .nav-cta { background: #FAFAFA; color: #09090B; }
+html.dark .top-banner { background: #09090B; border-bottom-color: var(--n100); }
+html.dark .theme-toggle { border-color: var(--n200); color: var(--n500); }
+html.dark .theme-toggle:hover { background: var(--n100); color: var(--n600); }
+html.dark .form-input { background: var(--n50); border-color: var(--n200); color: var(--n900); }
+html.dark .form-input::placeholder { color: var(--n400); }
+html.dark .btn-outlined { background: var(--n50); color: var(--n900); border-color: var(--n200); }
+html.dark .btn-solid { background: #FAFAFA; color: #09090B; }
+html.dark .floating-cta { background: #FAFAFA; color: #09090B; }
 
 /* ===== COMMON BUTTONS ===== */
 .btn {
