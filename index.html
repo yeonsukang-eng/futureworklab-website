@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AX Flow - 제조 현장의 AI 운영 플랫폼</title>
 <script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="common.css">
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
@@ -508,6 +509,7 @@
       <a href="resources.html" data-page="resources">리소스</a>
       <a href="#contact">회사소개</a>
       <a href="#contact" class="nav-cta">PoC 신청 →</a>
+      <button class="theme-toggle" aria-label="테마 변경"></button>
     </div>
   </div>
 </nav>
@@ -956,6 +958,10 @@ lucide.createIcons();
 </script>
 <div id="page-footer"></div>
 <script src="common.js"></script>
-<script>document.getElementById("page-footer").innerHTML = getFooterHTML();</script>
+<script>
+document.getElementById("page-footer").innerHTML = getFooterHTML();
+initCommon();
+updateThemeIcon();
+</script>
 </body>
 </html>
