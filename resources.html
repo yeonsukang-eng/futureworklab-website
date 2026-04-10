@@ -27,53 +27,7 @@
     line-height: 1.5; overflow-x: hidden;
   }
 
-  /* ===== TOP BANNER ===== */
-  .top-banner {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1001;
-    height: var(--banner-h); background: var(--n0);
-    border-bottom: 1px solid var(--n100);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .top-banner-inner { display: flex; align-items: center; gap: 12px; }
-  .top-banner-dot { width: 6px; height: 6px; border-radius: 50%; background: #00E29E; }
-  .top-banner-text { font-size: 13px; font-weight: 500; color: var(--n700); }
-  .top-banner-btn {
-    font-size: 12px; font-weight: 600; color: var(--n900);
-    background: var(--n75); border: none; border-radius: 4px;
-    padding: 4px 10px; text-decoration: none; cursor: pointer;
-  }
-  .top-banner-btn:hover { background: var(--n100); }
-  .top-banner-close {
-    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; font-size: 18px; color: var(--n400); cursor: pointer;
-  }
-
-  /* ===== NAV ===== */
-  .nav {
-    position: fixed; top: var(--banner-h); left: 0; right: 0; z-index: 1000;
-    background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--n100);
-    transition: box-shadow 0.3s ease;
-  }
-  .nav.scrolled { box-shadow: var(--shadow-100); }
-  .nav-inner {
-    max-width: 1200px; margin: 0 auto; padding: 0 40px;
-    display: flex; align-items: center; justify-content: space-between; height: 64px;
-  }
-  .nav-logo { display: flex; align-items: center; text-decoration: none; }
-  .nav-logo svg { height: 18px; width: auto; }
-  .nav-links { display: flex; align-items: center; gap: 32px; }
-  .nav-links a {
-    font-size: 14px; font-weight: 500; color: var(--n500);
-    text-decoration: none; transition: color 0.2s ease;
-  }
-  .nav-links a:hover { color: var(--n900); }
-  .nav-links a.active { color: var(--n900); font-weight: 600; }
-  .nav-cta {
-    padding: 8px 20px; border-radius: 8px; background: var(--n900);
-    color: var(--n0) !important; font-size: 14px; font-weight: 500;
-  }
-  .nav-cta:hover { background: var(--n700); }
+  /* Banner/Nav styles from common.css */
 
   @media (max-width: 768px) {
     .nav-links { display: none; }
