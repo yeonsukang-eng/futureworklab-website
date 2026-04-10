@@ -66,27 +66,25 @@ body {
 .nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; }
 
 /* ===== FOOTER ===== */
-.footer { background: #0C1220; padding: 56px 0 32px; color: rgba(255,255,255,0.45); }
+.footer { background: var(--n900); padding: 56px 0 32px; }
 .footer-inner {
   max-width: 1200px; margin: 0 auto; padding: 0 40px;
   display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 64px;
 }
-.footer-brand .footer-logo-text { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 20px; letter-spacing: -0.3px; }
-.footer-brand .footer-tagline { font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
-.footer-brand .footer-info { font-size: 12px; color: rgba(255,255,255,0.25); line-height: 1.9; }
-.footer-col h4 { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.35); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+.footer-brand .footer-logo-text { font-size: 18px; font-weight: 600; color: var(--n0); margin-bottom: 20px; letter-spacing: -0.3px; opacity: 0.7; }
+.footer-brand .footer-tagline { font-size: 15px; line-height: 1.7; color: var(--n400); margin-bottom: 24px; }
+.footer-brand .footer-info { font-size: 12px; color: var(--n500); line-height: 1.9; }
+.footer-col h4 { font-size: 12px; font-weight: 600; color: var(--n400); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
 .footer-col a {
-  display: block; font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.7);
+  display: block; font-size: 15px; font-weight: 500; color: var(--n300);
   text-decoration: none; margin-bottom: 14px; transition: color 0.2s ease;
 }
-.footer-col a:hover { color: #FFFFFF; }
+.footer-col a:hover { color: var(--n0); }
 .footer-bottom {
   max-width: 1200px; margin: 40px auto 0; padding: 20px 40px 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  text-align: center; font-size: 12px; color: rgba(255,255,255,0.2);
+  border-top: 1px solid var(--n800);
+  text-align: center; font-size: 12px; color: var(--n500);
 }
-.footer-bottom a { color: rgba(255,255,255,0.3); text-decoration: none; }
-.footer-bottom a:hover { color: rgba(255,255,255,0.6); }
 
 /* ===== DARK MODE ===== */
 .theme-toggle {
