@@ -1,0 +1,259 @@
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
+import { join, basename } from 'path';
+
+const SRC = '/Users/yeonsu/Downloads/ExportBlock-08d99426-99ad-4200-a08a-9c319ce40da2-Part-1/블로그 작성(2026스마트공장가이드 파생)';
+const DEST = '/Users/yeonsu/Desktop/클로드코드/blog';
+
+const categoryMap = {
+  '01': '지원사업', '02': '지원사업', '03': '지원사업', '04': '지원사업',
+  '05': '지원사업', '06': '지원사업', '08': '지원사업', '09': '지원사업',
+  '10': '지원사업', '11': '지원사업', '12': '지원사업', '13': '지원사업', '14': '지원사업'
+};
+
+const dateMap = {
+  '01': '2026. 4. 6', '02': '2026. 4. 6', '03': '2026. 4. 6',
+  '04': '2026. 4. 7', '05': '2026. 4. 8', '06': '2026. 4. 8',
+  '08': '2026. 4. 7', '09': '2026. 4. 7', '10': '2026. 4. 6',
+  '11': '2026. 4. 6', '12': '2026. 4. 7', '13': '2026. 4. 7', '14': '2026. 4. 8'
+};
+
+// Simple markdown to HTML converter
+function mdToHtml(md) {
+  let html = md;
+  // Remove notion file links at top
+  html = html.replace(/\[.*?\.(html|png)\]\(.*?\)\n*/g, '');
+  // Remove image references
+  html = html.replace(/!\[.*?\]\(.*?\)\n*/g, '');
+  // H1 - skip (used as title)
+  // H2
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  // H3
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Horizontal rule
+  html = html.replace(/^---$/gm, '<hr>');
+  // Convert internal blog links - multiple formats
+  // Format 1: [블로그 #2: title](/blogs/02)
+  html = html.replace(/\[블로그 #(\d+):\s*([^\]]+)\]\(\/blogs?\/(\d+)\)/g, (m, num, text, blogNum) => {
+    const paddedNum = blogNum.padStart(2, '0');
+    return `<a href="blog-${paddedNum}.html" class="internal-link">${text.trim()}</a>`;
+  });
+  // Format 2: [상세 분석: 블로그 #N — title](/blogs/NN)
+  html = html.replace(/\[([^\]]*블로그[^\]]*)\]\(\/blogs?\/(\d+)\)/g, (m, text, blogNum) => {
+    const paddedNum = blogNum.padStart(2, '0');
+    return `<a href="blog-${paddedNum}.html" class="internal-link">${text.trim()}</a>`;
+  });
+  // Format 3: [any text](/blogs/NN) - catch all remaining blog links
+  html = html.replace(/\[([^\]]+)\]\(\/blogs?\/(\d+)\)/g, (m, text, blogNum) => {
+    const paddedNum = blogNum.padStart(2, '0');
+    return `<a href="blog-${paddedNum}.html" class="internal-link">${text.trim()}</a>`;
+  });
+  // Tables - process line by line to properly group header + separator + body
+  const tableLines = html.split('\n');
+  const tableResult = [];
+  let i = 0;
+  while (i < tableLines.length) {
+    const line = tableLines[i].trim();
+    // Detect table start: line starts and ends with |
+    if (line.startsWith('|') && line.endsWith('|')) {
+      // Collect all consecutive table lines
+      const tableRows = [];
+      while (i < tableLines.length) {
+        const tl = tableLines[i].trim();
+        if (tl.startsWith('|') && tl.endsWith('|')) {
+          tableRows.push(tl);
+          i++;
+        } else {
+          break;
+        }
+      }
+      // Build table HTML
+      if (tableRows.length >= 2) {
+        let tableHtml = '<table>';
+        // First row = header
+        const headerCells = tableRows[0].split('|').filter(c => c.trim());
+        tableHtml += '<thead><tr>' + headerCells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr></thead>';
+        tableHtml += '<tbody>';
+        // Skip separator row (row 1 with --- patterns), process data rows
+        for (let r = 1; r < tableRows.length; r++) {
+          const row = tableRows[r];
+          // Skip separator rows
+          if (/^\|[\s\-:]+\|/.test(row) && !row.match(/[가-힣a-zA-Z0-9★]/)) continue;
+          const cells = row.split('|').filter(c => c.trim());
+          tableHtml += '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+        }
+        tableHtml += '</tbody></table>';
+        tableResult.push(tableHtml);
+      }
+    } else {
+      tableResult.push(tableLines[i]);
+      i++;
+    }
+  }
+  html = tableResult.join('\n');
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  // Merge consecutive blockquotes
+  html = html.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
+  // Lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/((<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+  // Numbered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // Paragraphs - wrap remaining lines
+  const lines = html.split('\n');
+  const result = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) { result.push(''); continue; }
+    if (trimmed.startsWith('<')) { result.push(trimmed); continue; }
+    result.push(`<p>${trimmed}</p>`);
+  }
+  let final = result.join('\n');
+  // Remove consecutive hrs (double lines)
+  final = final.replace(/(<hr>\s*){2,}/g, '<hr>');
+  // Remove hr right before h2 (h2 already has border-top)
+  final = final.replace(/<hr>\s*<h2>/g, '<h2>');
+  // Style tag lines: remove "태그:" prefix, wrap in tag-line class
+  final = final.replace(/<strong>태그:<\/strong>\s*/g, '');
+  final = final.replace(/태그:\s*/g, '');
+  // Wrap any line starting with # hashtags in tag-line (inside <p> or bare)
+  final = final.replace(/<p>(#[A-Za-z가-힣0-9_#\s]+)<\/p>/g, '<p class="tag-line">$1</p>');
+  // Bare tag lines (not wrapped in <p>)
+  final = final.replace(/^(#[A-Za-z가-힣0-9_#\s]{10,})$/gm, '<p class="tag-line">$1</p>');
+  return final;
+}
+
+function generatePage(title, category, date, bodyHtml, slug) {
+  const readTime = Math.max(5, Math.ceil(bodyHtml.length / 1500));
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title} - 퓨쳐워크랩</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --n0:#FFF; --n50:#F9F9FB; --n75:#EDEDF3; --n100:#E8E8EE; --n200:#DADAE0; --n300:#C7C7CC; --n400:#AEAEB2; --n500:#8E8E93; --n600:#636366; --n700:#48484A; --n800:#3A3A3C; --n900:#1D1D1F; }
+  body { font-family:'Outfit','Pretendard',-apple-system,sans-serif; color:var(--n900); background:var(--n0); line-height:1.7; }
+
+  .nav { position:fixed; top:0; left:0; right:0; z-index:1000; background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--n100); }
+  .nav-inner { max-width:1200px; margin:0 auto; padding:0 40px; display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .nav-logo { display:flex; align-items:center; text-decoration:none; }
+  .nav-logo svg { height:18px; width:auto; }
+  .nav-back { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:var(--n500); text-decoration:none; }
+  .nav-back:hover { color:var(--n900); }
+
+  .article-thumb { margin-bottom:32px; margin-top:-8px; }
+  .article-thumb img { width:100%; border-radius:12px; display:block; }
+  .article-header { max-width:720px; margin:0 auto; padding:100px 24px 32px; }
+  .article-badge { display:inline-flex; padding:4px 12px; border-radius:999px; background:var(--n75); color:var(--n400); font-size:12px; font-weight:500; margin-bottom:16px; }
+  .article-header h1 { font-size:36px; font-weight:700; line-height:1.4; margin-bottom:16px; }
+  .article-meta { font-size:14px; color:var(--n400); display:flex; gap:12px; align-items:center; padding-bottom:32px; border-bottom:1px solid var(--n100); }
+  .article-meta .dot { width:3px; height:3px; border-radius:50%; background:var(--n300); }
+
+  .article-body { max-width:720px; margin:0 auto; padding:40px 24px 80px; }
+  .article-body h2 { font-size:24px; font-weight:700; margin:48px 0 16px; padding-top:24px; border-top:1px solid var(--n100); }
+  .article-body h3 { font-size:20px; font-weight:600; margin:32px 0 12px; }
+  .article-body p { font-size:16px; line-height:1.8; margin-bottom:16px; color:var(--n700); }
+  .article-body strong { color:var(--n900); }
+  .article-body hr { border:none; border-top:1px solid var(--n100); margin:32px 0; }
+  .article-body blockquote { border-left:3px solid var(--n900); padding:12px 20px; margin:24px 0; background:var(--n50); border-radius:0 8px 8px 0; color:var(--n600); font-size:15px; }
+  .article-body ul, .article-body ol { padding-left:24px; margin-bottom:16px; }
+  .article-body li { font-size:16px; line-height:1.8; margin-bottom:8px; color:var(--n700); }
+  .article-body table { width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--n100); border-radius:8px; overflow:hidden; margin:24px 0; }
+  .article-body thead th { background:var(--n50); padding:12px 16px; text-align:center; font-size:14px; font-weight:600; color:var(--n600); border-bottom:1px solid var(--n100); }
+  .article-body tbody td { padding:12px 16px; text-align:center; font-size:14px; border-bottom:1px solid var(--n100); }
+  .article-body tbody tr:last-child td { border-bottom:none; }
+  .article-body .internal-link { color:var(--n900); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+  .article-body .internal-link:hover { color:var(--n600); }
+  .article-body .tag-line { color:var(--n400); font-size:14px; line-height:2; }
+
+  .article-footer { max-width:720px; margin:0 auto; padding:0 24px 80px; }
+  .cta-card { background:var(--n900); border-radius:16px; padding:48px; text-align:center; }
+  .cta-card h3 { font-size:24px; font-weight:700; color:var(--n0); margin-bottom:8px; }
+  .cta-card p { font-size:16px; color:var(--n400); margin-bottom:24px; }
+  .cta-card a { display:inline-flex; padding:12px 28px; border-radius:8px; background:var(--n0); color:var(--n900); font-size:14px; font-weight:600; text-decoration:none; }
+  .cta-card a:hover { background:var(--n75); }
+
+  @media (max-width:768px) {
+    .article-header h1 { font-size:26px; }
+    .article-header, .article-body, .article-footer { padding-left:20px; padding-right:20px; }
+  }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-logo"><svg width="674" height="62" viewBox="0 0 674 62" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_20_2276)"><path d="M44.1489 10.4704H18.0248C16.67 10.4704 15.4183 10.8081 14.2549 11.4837C13.0915 12.1592 12.1638 13.0549 11.5011 14.2004C10.8237 15.3311 10.485 16.6087 10.485 18.0038V62.0294H0V18.136C0 14.8759 0.809937 11.8655 2.44454 9.10469C4.07914 6.34391 6.28806 4.12648 9.05657 2.48176C11.8251 0.822359 14.8439 0 18.1131 0H44.1489V10.4704ZM42.5143 36.3453H15.0796V25.8896H42.5143V36.3453Z" fill="#036D85"/><path d="M89.2254 60.4874C88.1799 61.5007 86.9429 62 85.4997 62H66.6208C64.0291 62 61.6287 61.3685 59.4345 60.1056C57.2256 58.8427 55.4879 57.1099 54.2214 54.9071C52.955 52.7044 52.3218 50.3254 52.3218 47.7409V15.5073H62.8215V47.9024C62.8215 48.5779 62.9835 49.1947 63.3222 49.7674C63.6609 50.3401 64.1027 50.7807 64.677 51.089C65.2513 51.3974 65.8698 51.559 66.5472 51.559H80.2278V15.5073H90.8011V56.7428C90.8011 58.2406 90.2857 59.4888 89.2402 60.5021L89.2254 60.4874Z" fill="#072C4A"/><path d="M98.5474 15.5074H123.258V25.9778H98.5474V15.5074ZM110.593 60.0323C108.473 58.7106 106.765 56.9778 105.498 54.8044C104.232 52.6311 103.598 50.2374 103.598 47.5941V2.32031H114.083V47.8878C114.083 48.5633 114.245 49.1801 114.584 49.7528C114.923 50.3255 115.365 50.7661 115.909 51.0745C116.454 51.3828 117.058 51.5444 117.736 51.5444H123.405V62.0001H117.574C115.026 62.0001 112.699 61.3393 110.579 60.0176L110.593 60.0323Z" fill="#072C4A"/><path d="M170.057 60.4874C169.012 61.5007 167.775 62 166.332 62H147.453C144.861 62 142.461 61.3685 140.267 60.1056C138.058 58.8427 136.32 57.1099 135.053 54.9071C133.787 52.7044 133.154 50.3254 133.154 47.7409V15.5073H143.654V47.9024C143.654 48.5779 143.816 49.1947 144.154 49.7674C144.493 50.3401 144.935 50.7807 145.509 51.089C146.083 51.3974 146.702 51.559 147.379 51.559H161.06V15.5073H171.633V56.7428C171.633 58.2406 171.118 59.4888 170.072 60.5021L170.057 60.4874Z" fill="#072C4A"/><path d="M185.166 22.4827C186.433 20.3681 188.17 18.6793 190.379 17.4017C192.574 16.1388 194.974 15.5073 197.566 15.5073H213.264V25.9777H197.566C196.888 25.9777 196.255 26.1246 195.666 26.4476C195.077 26.756 194.606 27.1966 194.267 27.7693C193.928 28.342 193.766 28.9588 193.766 29.6343V62.0294H183.267V29.5609C183.267 26.9763 183.9 24.6267 185.166 22.5121V22.4827Z" fill="#072C4A"/><path d="M226.709 60.0616C224.529 58.7694 222.806 57.0365 221.54 54.8631C220.273 52.6898 219.64 50.3108 219.64 47.7262V29.7518C219.64 27.1673 220.273 24.7883 221.54 22.6149C222.806 20.4416 224.529 18.7087 226.709 17.4164C228.888 16.1242 231.274 15.478 233.866 15.478H248.165C250.756 15.478 253.142 16.1242 255.322 17.4164C257.501 18.7087 259.224 20.4709 260.49 22.6884C261.757 24.9058 262.39 27.3141 262.39 29.8987C262.39 32.4832 261.757 35.0091 260.49 37.1824C259.224 39.3558 257.501 41.0886 255.322 42.3809C253.142 43.6732 250.756 44.3193 248.165 44.3193H234.558V33.7755H248.238C249.269 33.7755 250.138 33.4084 250.845 32.6595C251.537 31.9105 251.89 31.0001 251.89 29.9134C251.89 29.2379 251.714 28.5917 251.39 27.9749C251.051 27.3582 250.594 26.8589 250.035 26.5064C249.461 26.1393 248.872 25.9631 248.253 25.9631H233.718C233.1 25.9631 232.496 26.11 231.936 26.433C231.362 26.7414 230.92 27.182 230.611 27.7547C230.302 28.3274 230.14 28.9442 230.14 29.6197V47.9172C230.14 48.5927 230.287 49.2094 230.611 49.7821C230.92 50.3549 231.362 50.7954 231.936 51.1038C232.511 51.4122 233.1 51.5737 233.718 51.5737H259.209V62.0294H233.866C231.274 62.0294 228.888 61.3833 226.709 60.091V60.0616Z" fill="#072C4A"/><path d="M326.552 54.9071C325.285 57.1099 323.548 58.828 321.339 60.1056C319.13 61.3685 316.744 62 314.153 62H277.543C275.982 62 274.687 61.5007 273.656 60.4874C272.61 59.4742 272.095 58.2259 272.095 56.7281V15.5073H282.594V51.5443H295.023V15.5073H305.523V51.5443H314.315C314.992 51.5443 315.61 51.3827 316.185 51.045C316.759 50.7072 317.201 50.2667 317.51 49.7233C317.819 49.18 317.981 48.5779 317.981 47.9024V15.5073H328.481V47.7555C328.481 50.3401 327.848 52.7338 326.581 54.9218L326.552 54.9071Z" fill="#036D85"/><path d="M374.971 17.4751C377.18 18.7968 378.932 20.5443 380.258 22.7471C381.583 24.9498 382.231 27.2847 382.231 29.7665V47.9024C382.231 50.3842 381.568 52.6897 380.258 54.8337C378.932 56.9778 377.18 58.7106 374.971 60.0322C372.762 61.3539 370.421 62.0147 367.932 62.0147H354.413C351.925 62.0147 349.583 61.3539 347.374 60.0322C345.165 58.7106 343.413 56.9778 342.088 54.8337C340.762 52.6897 340.1 50.3695 340.1 47.9024V29.7665C340.1 27.2847 340.762 24.9498 342.088 22.7471C343.413 20.5443 345.165 18.7968 347.374 17.4751C349.583 16.1535 351.925 15.4927 354.413 15.4927H367.932C370.421 15.4927 372.762 16.1535 374.971 17.4751ZM352.587 26.5064C351.984 26.8735 351.512 27.3435 351.144 27.9455C350.776 28.5329 350.599 29.1497 350.599 29.7665V47.9024C350.599 48.5192 350.776 49.1213 351.144 49.6793C351.512 50.252 351.984 50.7073 352.587 51.0303C353.176 51.3681 353.795 51.5296 354.413 51.5296H367.932C368.55 51.5296 369.169 51.3681 369.758 51.0303C370.347 50.6926 370.833 50.252 371.201 49.6793C371.569 49.1066 371.746 48.5192 371.746 47.9024V29.7665C371.746 29.1497 371.569 28.5329 371.201 27.9455C370.833 27.3581 370.362 26.8735 369.758 26.5064C369.154 26.1393 368.55 25.9631 367.932 25.9631H354.413C353.795 25.9631 353.176 26.1393 352.587 26.5064Z" fill="#072C4A"/><path d="M393.703 22.4827C394.969 20.3681 396.707 18.6793 398.916 17.4017C401.11 16.1388 403.51 15.5073 406.102 15.5073H421.8V25.9777H406.102C405.425 25.9777 404.792 26.1246 404.203 26.4476C403.614 26.756 403.142 27.1966 402.804 27.7693C402.465 28.342 402.303 28.9588 402.303 29.6343V62.0294H391.803V29.5609C391.803 26.9763 392.436 24.6267 393.703 22.5121V22.4827Z" fill="#072C4A"/><path d="M431.52 0H442.019V62H431.52V0ZM443.565 38.2544C443.565 37.0943 443.845 36.1251 444.42 35.3468L459.499 15.5073H472.016L452.269 42.1606V34.4069L473.18 62L460.28 61.9266L444.42 41.3089C443.845 40.4278 443.565 39.4145 443.565 38.2544Z" fill="#072C4A"/><path d="M513.205 56.2729L508.463 51.5443H546.31V62H507.992C506.49 62 505.238 61.486 504.222 60.4434C503.206 59.4154 502.706 58.1232 502.706 56.5666V0H513.205V56.2729Z" fill="#036D85"/><path d="M559.21 60.0617C557.03 58.7694 555.307 57.0219 554.041 54.8338C552.774 52.6311 552.141 50.2227 552.141 47.5941C552.141 44.9655 552.774 42.5425 554.041 40.3397C555.307 38.137 557.045 36.4042 559.254 35.1119C561.463 33.8196 563.848 33.1735 566.44 33.1735H579.959V43.7173H566.278C565.292 43.7173 564.437 44.0991 563.716 44.848C562.994 45.597 562.626 46.5074 562.626 47.5941C562.626 48.2696 562.788 48.9158 563.127 49.5325C563.465 50.1493 563.907 50.6486 564.482 51.001C565.056 51.3682 565.645 51.5444 566.263 51.5444H580.798C581.417 51.5444 582.02 51.3828 582.58 51.0745C583.154 50.7661 583.596 50.3255 583.905 49.7528C584.215 49.18 584.377 48.5633 584.377 47.8878V29.5903C584.377 28.9148 584.215 28.2981 583.905 27.7253C583.596 27.1526 583.154 26.7121 582.58 26.4037C582.006 26.0953 581.417 25.9338 580.798 25.9338H560.049V15.4634H580.651C583.243 15.4634 585.643 16.1095 587.837 17.4018C590.046 18.6941 591.769 20.4269 593.05 22.6003C594.317 24.7737 594.95 27.1526 594.95 29.7372V47.7116C594.95 50.2962 594.317 52.6898 593.05 54.8779C591.784 57.0806 590.046 58.7988 587.837 60.0764C585.628 61.3393 583.243 61.9707 580.651 61.9707H566.425C563.789 61.9707 561.374 61.3246 559.195 60.0323L559.21 60.0617Z" fill="#072C4A"/><path d="M617.614 49.7968C617.952 50.3401 618.394 50.766 618.968 51.0744C619.543 51.3828 620.161 51.5443 620.839 51.5443H633.974C634.652 51.5443 635.27 51.3828 635.845 51.0744C636.419 50.766 636.861 50.3401 637.17 49.7968C637.479 49.2534 637.641 48.6513 637.641 47.9758V29.5315C637.641 28.856 637.479 28.2539 637.17 27.7106C636.861 27.1672 636.419 26.7414 635.845 26.433C635.27 26.1246 634.652 25.9631 633.974 25.9631H621.619V15.4927H633.901C636.492 15.4927 638.878 16.1388 641.058 17.4311C643.237 18.7234 644.975 20.4709 646.271 22.6589C647.567 24.8617 648.214 27.2406 648.214 29.8252V47.6528C648.214 50.2373 647.567 52.631 646.271 54.819C644.975 57.0218 643.237 58.7546 641.058 60.0469C638.878 61.3392 636.492 61.9853 633.901 61.9853H620.927C618.276 61.9853 615.876 61.3392 613.696 60.0469C611.517 58.7546 609.794 57.0071 608.528 54.819C607.261 52.6163 606.628 50.2373 606.628 47.6528V0H617.113V47.9758C617.113 48.6513 617.275 49.2534 617.614 49.7968Z" fill="#072C4A"/><path d="M660.246 53.1303C660.246 56.9191 663.323 59.9882 667.123 59.9882C670.922 59.9882 674 56.9191 674 53.1303C674 49.3416 670.922 46.2725 667.123 46.2725C663.323 46.2725 660.246 49.3416 660.246 53.1303Z" fill="#072C4A"/></g><defs><clipPath id="clip0_20_2276"><rect width="674" height="62" fill="white"/></clipPath></defs></svg></a>
+    <a href="../resources.html" class="nav-back">← 리소스 목록</a>
+  </div>
+</nav>
+
+<article>
+  <header class="article-header">
+    <span class="article-badge">${category}</span>
+    <h1>${title}</h1>
+    <div class="article-meta">
+      <span>${date}</span>
+      <span class="dot"></span>
+      <span>${readTime}분 읽기</span>
+      <span class="dot"></span>
+      <span>Youngwoo Lee</span>
+    </div>
+  </header>
+  <div class="article-body">
+    <div class="article-thumb">
+      <img src="thumbs/${slug}.png" alt="${title}">
+    </div>
+    ${bodyHtml}
+  </div>
+  <footer class="article-footer">
+    <div class="cta-card">
+      <h3>PoC 2주, 비용 최대 50% 절감</h3>
+      <p>우리 공장에 AX Flow를 적용할 수 있는지 확인해보세요.</p>
+      <a href="../index.html#contact">무료 상담 신청 →</a>
+    </div>
+  </footer>
+</article>
+</body>
+</html>`;
+}
+
+// Process each file
+const files = readdirSync(SRC).filter(f => f.endsWith('.md'));
+const generated = [];
+
+for (const file of files) {
+  const md = readFileSync(join(SRC, file), 'utf-8');
+  const num = file.match(/^(\d+)/)?.[1];
+  if (!num) continue;
+
+  // Extract title (second H1 or first meaningful H1)
+  const titleMatch = md.match(/^# (.+)$/gm);
+  let title = titleMatch && titleMatch.length > 1 ? titleMatch[1].replace('# ', '') : (titleMatch?.[0]?.replace('# ', '') || file);
+
+  // Remove first H1 (file name) and second H1 (title) from body
+  let body = md;
+  // Remove the file identifier H1
+  body = body.replace(/^# \d+_블로그_.+$/m, '');
+  // Remove the title H1 (we show it in header)
+  body = body.replace(new RegExp(`^# ${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'), '');
+
+  const bodyHtml = mdToHtml(body);
+  const slug = `blog-${num}`;
+  const category = categoryMap[num] || '지원사업';
+  const date = dateMap[num] || '2026. 4. 7';
+
+  const html = generatePage(title, category, date, bodyHtml, slug);
+  writeFileSync(join(DEST, `${slug}.html`), html, 'utf-8');
+  generated.push({ num, slug, title });
+}
+
+console.log(`Generated ${generated.length} blog pages:`);
+generated.forEach(g => console.log(`  ${g.slug}: ${g.title}`));
