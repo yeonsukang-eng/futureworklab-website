@@ -505,7 +505,7 @@
       <a href="#features">제품</a>
       <a href="#solution">솔루션</a>
       <a href="#results">고객사례</a>
-      <a href="resources.html">리소스</a>
+      <a href="resources.html" data-page="resources">리소스</a>
       <a href="#contact">회사소개</a>
       <a href="#contact" class="nav-cta">PoC 신청 →</a>
     </div>
@@ -954,5 +954,8 @@ document.querySelectorAll('.stats-box, .traction-grid').forEach(el => counterObs
 // Initialize Lucide icons
 lucide.createIcons();
 </script>
+<div id="page-footer"></div>
+<script src="common.js"></script>
+<script>document.getElementById("page-footer").innerHTML = getFooterHTML();</script>
 </body>
 </html>
